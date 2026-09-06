@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>英语通行证｜月度打卡</title>
+    <style>
+        * {margin:0;padding:0;box-sizing:border-box;}
+        :root{
+            --bg:#F2F2F7;                 /* iOS 系统灰底 */
+            --card:#FFFFFF;
+            --ink:#1C1C1E;                /* iOS 系统黑 */
+            --ink2:#8E8E93;               /* iOS 系统灰 */
+            --line:rgba(60,60,67,.12);    /* iOS 分隔线 */
+            --blue:#007AFF;               /* iOS 系统蓝 */
+            --green:#34C759;              /* iOS 系统绿 */
+            --orange:#FF9500;             /* iOS 系统橙 */
+            --red:#FF3B30;                /* iOS 系统红 */
+            --fill:rgba(120,120,128,.12); /* iOS 填充灰 */
+        }
+        html{font-size:16px;}
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+            background:var(--bg);
+            color:var(--ink);
+            -webkit-font-smoothing:antialiased;
+            min-height:100vh;
+            /* 底部导航悬浮层高度预留，内容永远不会被遮挡 */
+            padding-bottom:130px;
+        }
+        .app-shell{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;}
+        @media(min-width:560px){
+            body{padding:24px 16px 140px;}
+            .app-shell{min-height:calc(100vh - 48px);border-radius:44px;box-shadow:0 22px 60px rgba(0,0,0,.16);animation:shellIn .45s ease both;}
+        }
+        @keyframes shellIn{from{opacity:0;}to{opacity:1;}}
+
+        /* ===== iOS 大标题导航区 ===== */
+        .topbar{padding:30px 20px 14px;}
+        .page-title{font-size:32px;font-weight:700;letter-spacing:-.4px;line-height:1.15;}
+        .page-sub{font-size:13px;color:var(--ink2);margin-top:5px;}
+
+        /* ===== iOS 卡片 ===== */
+        .container{padding:6px 16px 24px;}
+        .card{background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+        .card-title{font-weight:600;font-size:15px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+        .card-title .more{font-size:12px;color:var(--ink2);font-weight:400;}
+
+        /* ===== 等级卡（顶部第一张） ===== */
+        .level-card{display:flex;flex-direction:column;gap:16px;}
+        .level-head{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+        .lv-badge{display:flex;align-items:center;gap:10px;background:var(--fill);border-radius:999px;padding:5px 14px 5px 5px;}
+        .lv-badge .lv-ico{width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;}
+        .lv-badge .lb{font-size:11px;color:var(--ink2);font-weight:600;letter-spacing:1px;}
+        .lv-badge .lv{font-size:22px;font-weight:700;line-height:1;}
+        .coin-pill{display:flex;align-items:center;gap:6px;background:rgba(52,199,89,.14);color:#1E9E63;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;white-space:nowrap;}
+        .coin-pill small{font-weight:500;font-size:11px;color:#5CB87F;}
+        .progress-wrap{width:100%;}
+        .bar-bg{width:100%;height:8px;background:var(--fill);border-radius:99px;overflow:hidden;}
+        .bar-fill{height:100%;background:var(--blue);border-radius:99px;transition:width .5s ease;}
+        .sub-info{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--ink2);gap:8px;}
+        .sub-info b{color:var(--ink);font-size:13px;}
+
+        /* ===== 首页 ===== */
+        .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .stat-tile{background:var(--fill);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;}
+        .stat-ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.06);}
+        .stat-num{font-size:24px;font-weight:700;line-height:1.15;letter-spacing:-.3px;}
+        .stat-lab{font-size:12px;color:var(--ink2);margin-top:2px;}
+        .entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .entry{display:flex;align-items:center;justify-content:space-between;padding:16px;border-radius:16px;color:#fff;cursor:pointer;transition:.15s;box-shadow:0 2px 8px rgba(0,0,0,.10);}
+        .entry:active{opacity:.82;transform:scale(.98);}
+        .entry .e-ico{font-size:26px;line-height:1;}
+        .entry .e-name{font-weight:700;font-size:15px;margin-top:6px;}
+        .entry .e-sub{font-size:11px;opacity:.92;margin-top:2px;}
+        .entry .e-arr{font-size:18px;opacity:.85;}
+        .entry.task{background:var(--blue);}
+        .entry.wallet{background:var(--green);}
+        .btn-reset{background:rgba(255,59,48,.10);color:var(--red);border:none;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;}
+        .btn-reset:hover{background:rgba(255,59,48,.16);}
+        .btn-reset:active{opacity:.75;}
+
+        /* ===== iOS 分段控件 ===== */
+        .tab-wrap{display:flex;background:var(--fill);border-radius:10px;padding:2px;margin-bottom:14px;gap:2px;}
+        .tab{flex:1;text-align:center;padding:7px 4px;border-radius:8px;font-size:13px;font-weight:600;color:#61616A;cursor:pointer;transition:.15s;}
+        .tab.active{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12);}
+
+        /* ===== 任务列表（iOS 分组样式） ===== */
+        .task-item{display:flex;align-items:center;justify-content:space-between;padding:12px 2px;border-bottom:0.5px solid var(--line);flex-wrap:wrap;gap:8px;}
+        .task-item:last-child{border-bottom:none;}
+        .task-left{display:flex;align-items:center;gap:11px;flex:1;min-width:0;}
+        .task-ico{width:36px;height:36px;border-radius:10px;background:var(--fill);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+        .task-ico.blue{background:rgba(0,122,255,.12);}
+        .task-ico.green{background:rgba(52,199,89,.14);}
+        .task-ico.orange{background:rgba(255,149,0,.16);}
+        .task-ico.purple{background:rgba(175,82,222,.14);}
+        .task-ico.red{background:rgba(255,59,48,.10);}
+        .task-name{font-size:14px;font-weight:500;line-height:1.35;}
+        .score{background:var(--fill);color:#C56A00;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:6px;white-space:nowrap;}
+        .task-right{display:flex;align-items:center;gap:8px;}
+        .timer-text{font-size:12px;color:#C97300;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600;}
+        .note-input{width:100%;margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--fill);border:1.5px solid transparent;color:var(--ink);font-size:13px;outline:none;transition:.15s;font-family:inherit;}
+        .note-input:focus{border-color:var(--blue);background:var(--card);}
+        .note-input::placeholder{color:#AFAFB5;}
+        .chain-hint{font-size:12px;color:var(--ink2);padding:2px 2px 10px;display:flex;align-items:center;gap:6px;}
+
+        /* ===== iOS 按钮 ===== */
+        .btn{border:none;padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;}
+        .btn:active{opacity:.72;}
+        .btn:disabled{cursor:default;}
+        .btn-do{background:var(--blue);color:#fff;}
+        .btn-done{background:rgba(52,199,89,.15);color:#1E9E63;}
+        .btn-timer{background:rgba(255,149,0,.16);color:#C97300;}
+        .btn[disabled]:not(.btn-done){background:var(--fill);color:var(--ink2);}
+
+        /* ===== 日历（iOS 风格） ===== */
+        .cal-week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;}
+        .cal-week span{text-align:center;font-size:11px;color:var(--ink2);font-weight:500;}
+        .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+        .day-cell{aspect-ratio:1/1;background:var(--fill);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;color:#61616A;font-weight:500;gap:1px;}
+        .day-cell.blank{background:transparent;}
+        .day-cell.today{background:var(--blue);color:#fff;font-weight:600;}
+        .day-cell.finish{background:rgba(0,122,255,.14);color:var(--blue);font-weight:600;}
+        .day-cell.finish::after{content:"✓";font-size:9px;font-weight:700;line-height:1;}
+        .day-cell.today.finish{background:var(--blue);color:#fff;box-shadow:0 0 0 3px rgba(0,122,255,.25);}
+        .day-cell.today.finish::after{color:#fff;}
+
+        /* ===== 图表（iOS 风格） ===== */
+        .chart-row{display:flex;height:130px;align-items:flex-end;gap:5px;}
+        .chart-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;}
+        .chart-col .col{width:100%;max-width:20px;background:rgba(0,122,255,.32);border-radius:5px 5px 2px 2px;min-height:3px;transition:height .4s ease;}
+        .chart-col .col.today-bar{background:var(--blue);}
+        .chart-lab{font-size:9px;color:#AFAFB5;height:12px;}
+
+        /* ===== 钱包&抽奖 ===== */
+        .wallet-card{background:linear-gradient(135deg,#34C759,#1FA653);color:#fff;border-radius:18px;padding:20px;position:relative;overflow:hidden;margin-bottom:14px;box-shadow:0 6px 18px rgba(31,166,83,.28);}
+        .wallet-card .wc-lab{font-size:13px;opacity:.94;}
+        .balance{font-size:38px;font-weight:700;margin:4px 0 2px;letter-spacing:-.5px;}
+        .balance small{font-size:15px;font-weight:500;opacity:.9;}
+        .wc-sub{font-size:13px;opacity:.94;}
+        .wc-sub b{font-size:15px;}
+        .lottery-btn{width:100%;padding:15px;border:none;border-radius:14px;background:var(--orange);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(255,149,0,.35);transition:.15s;font-family:inherit;}
+        .lottery-btn:not(:disabled):active{opacity:.8;transform:scale(.98);}
+        .lottery-btn:disabled{background:var(--fill);color:var(--ink2);box-shadow:none;cursor:default;}
+        .rule-list{font-size:13px;line-height:2.1;color:#61616A;}
+        .rule-list b{color:var(--ink);}
+        .reward-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:0.5px solid var(--line);font-size:13px;}
+        .reward-row:last-child{border-bottom:none;}
+        .reward-range{color:#61616A;font-weight:500;}
+        .reward-val{font-weight:600;color:#1E9E63;}
+        .reward-total{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:12px 14px;background:var(--fill);border-radius:12px;font-size:13px;font-weight:600;}
+        .reward-total .rv{color:var(--blue);font-size:17px;font-weight:700;}
+
+        /* ===== iOS Tab Bar（毛玻璃，悬浮不遮挡） ===== */
+        footer{
+            position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+            width:100%;max-width:480px;
+            display:flex;
+            background:rgba(250,250,252,.88);
+            -webkit-backdrop-filter:saturate(180%) blur(20px);
+            backdrop-filter:saturate(180%) blur(20px);
+            border-top:0.5px solid rgba(60,60,67,.18);
+            padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+            z-index:60;
+        }
+        @media(min-width:560px){
+            footer{bottom:14px;width:calc(100% - 40px);max-width:440px;border-radius:20px;border:0.5px solid rgba(60,60,67,.10);box-shadow:0 8px 30px rgba(0,0,0,.16);}
+        }
+        .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 5px;font-size:10px;color:var(--ink2);cursor:pointer;border-radius:12px;transition:.15s;}
+        .nav-ico{font-size:20px;line-height:1;}
+        .nav-item.active{color:var(--blue);}
+        .nav-item.active .nav-ico{transform:translateY(-1px);}
+        .nav-item:active{background:rgba(0,0,0,.05);}
+
+        .hide{display:none !important;}
+        .anim{animation:pageIn .25s ease both;}
+        @keyframes pageIn{from{opacity:0;}to{opacity:1;}}
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+
+        <header class="topbar">
+            <div class="page-title">英语通行证</div>
+            <div class="page-sub">月度打卡 · 学习得奖励</div>
+        </header>
+
+        <div class="container">
+            <!-- 等级卡 -->
+            <div class="card level-card">
+                <div class="level-head">
+                    <div class="lv-badge">
+                        <span class="lv-ico" id="curLv">1</span>
+                        <span class="lb">LEVEL</span>
+                    </div>
+                    <div class="coin-pill">💰 <b id="moneyShow">0.00</b> <small>元</small></div>
+                </div>
+                <div class="progress-wrap">
+                    <div class="bar-bg"><div class="bar-fill" id="bar" style="width:0%"></div></div>
+                    <div class="sub-info">
+                        <span>活跃度 <b id="actPoint">0</b> / 100</span>
+                        <span id="levelHint"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 首页 -->
+            <div id="page-home">
+                <div class="card">
+                    <div class="card-title">今日概况<span class="more">努力看得见 👀</span></div>
+                    <div class="stat-grid">
+                        <div class="stat-tile">
+                            <span class="stat-ico">⚡</span>
+                            <div><div class="stat-num" id="todayAct">0</div><div class="stat-lab">今日活跃度</div></div>
+                        </div>
+                        <div class="stat-tile">
+                            <span class="stat-ico">📊</span>
+                            <div><div class="stat-num" id="monthAct">0</div><div class="stat-lab">本月累计活跃度</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">快速入口</div>
+                    <div class="entry-grid">
+                        <div class="entry task" onclick="switchPage('page-task')">
+                            <div><span class="e-ico">📋</span><div class="e-name">今日任务</div><div class="e-sub">每日打卡 · 赚活跃度</div></div>
+                            <span class="e-arr">›</span>
+                        </div>
+                        <div class="entry wallet" onclick="switchPage('page-wallet')">
+                            <div><span class="e-ico">💰</span><div class="e-name">奖金钱包&抽奖</div><div class="e-sub">等级奖励 · 幸运抽奖</div></div>
+                            <span class="e-arr">›</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">危险操作</div>
+                    <button class="btn-reset" onclick="resetSeason()">重置本月赛季（清空全部）</button>
+                </div>
+            </div>
+
+            <!-- 任务页 -->
+            <div id="page-task" class="hide">
+                <div class="tab-wrap">
+                    <div class="tab active" data-type="daily">📅 每日任务</div>
+                    <div class="tab" data-type="weekly">🗓 每周任务</div>
+                    <div class="tab" data-type="month">🏆 月度挑战</div>
+                </div>
+                <div id="panel-daily" class="panel">
+                    <div class="card">
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico red">🔥</span><div class="task-name">登录打卡<span class="score">+10</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="d1">完成</button></div>
+                        </div>
+                        <div id="learnChainBox"></div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico blue">🆕</span><div class="task-name">新词30，复习50单词<span class="score">+25</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="d3">完成</button></div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico purple">✏️</span><div class="task-name">单选20题<span class="score">+20</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="d4">完成</button></div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico orange">🧩</span><div class="task-name">完形填空20题<span class="score">+25</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="d5">完成</button></div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico blue">📰</span><div class="task-name">精读短文1篇+生词笔记<span class="score">+25</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="d6">完成</button></div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico green">🎧</span><div class="task-name">听力精听1篇<span class="score">+15</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="d7">完成</button></div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico orange">📒</span><div class="task-name">错题复盘记录<span class="score">+5</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="d8">完成</button></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="panel-weekly" class="panel hide">
+                    <div class="card">
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico blue">🔡</span><div class="task-name">本周新词累计200个<span class="score">+25</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="w1">完成</button></div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico orange">🔁</span><div class="task-name">重做本周全部错题<span class="score">+25</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="w2">完成</button></div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico purple">🗞️</span><div class="task-name">7篇阅读习题<span class="score">+25</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="w3">完成</button></div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico green">🎵</span><div class="task-name">英文音频泛听300分钟<span class="score">+25</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="w4">完成</button></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="panel-month" class="panel hide">
+                    <div class="card">
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico orange">🏅</span><div class="task-name">限时完整一套真题<span class="score">+200</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="m1">完成</button></div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico blue">🗂️</span><div class="task-name">全月累计精读短文30篇<span class="score">+100</span></div></div>
+                            <div class="task-right"><button class="btn" data-id="m2">完成</button></div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-left"><span class="task-ico green">📆</span><div class="task-name">连续25天完成基础任务<span class="score">+750</span></div></div>
+                            <div class="task-right"><button class="btn" disabled>自动核算</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 打卡日历 -->
+            <div id="page-calendar" class="hide">
+                <div class="card">
+                    <div class="card-title">本月打卡日历<span class="more" id="calMonth"></span></div>
+                    <div class="cal-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+                    <div class="calendar-grid" id="calBox"></div>
+                </div>
+            </div>
+
+            <!-- 统计页面 -->
+            <div id="page-stat" class="hide">
+                <div class="card">
+                    <div class="card-title">活跃度走势（近14天）<span class="more">每日新增活跃度</span></div>
+                    <div class="chart-row" id="chartDom"></div>
+                </div>
+            </div>
+
+            <!-- 钱包&抽奖 -->
+            <div id="page-wallet" class="hide">
+                <div class="wallet-card">
+                    <div class="wc-lab">💰 当前奖金</div>
+                    <div class="balance"><span id="balance">0.00</span><small> 元</small></div>
+                    <div class="wc-sub">剩余抽奖次数 <b id="lotteryCount">0</b> 次</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">🎲 幸运抽奖</div>
+                    <button id="lotteryBtn" class="lottery-btn" onclick="doLottery()">🎲 开始抽奖</button>
+                    <div class="rule-list" style="margin-top:14px;">
+                        · 每升 1 级获得 <b>1 次</b>抽奖机会<br>
+                        · 每次点击消耗 1 次机会，奖金随机：<b>0.50‑2.00 元</b><br>
+                        · 满级最高 <b>55 级</b>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">等级固定奖励明细</div>
+                    <div class="reward-row"><span class="reward-range">1‑19 级</span><span class="reward-val">无固定奖励</span></div>
+                    <div class="reward-row"><span class="reward-range">20‑35 级</span><span class="reward-val">6 元 / 每级</span></div>
+                    <div class="reward-row"><span class="reward-range">36‑48 级</span><span class="reward-val">10 元 / 每级</span></div>
+                    <div class="reward-row"><span class="reward-range">49‑55 级</span><span class="reward-val">16 元 / 每级</span></div>
+                    <div class="reward-total"><span>✔ 满级 55 级固定合计</span><span class="rv">338 元</span></div>
+                    <div style="font-size:12px;color:var(--ink2);margin-top:10px;">抽奖奖金额外叠加，不计入上表。</div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="nav-item active" data-page="page-home"><span class="nav-ico">🏠</span><span>首页</span></div>
+            <div class="nav-item" data-page="page-task"><span class="nav-ico">📋</span><span>任务</span></div>
+            <div class="nav-item" data-page="page-calendar"><span class="nav-ico">📅</span><span>日历</span></div>
+            <div class="nav-item" data-page="page-stat"><span class="nav-ico">📊</span><span>统计</span></div>
+            <div class="nav-item" data-page="page-wallet"><span class="nav-ico">💰</span><span>钱包&抽奖</span></div>
+        </footer>
+
+    </div>
+
+    <script>
+        //难度分值
+        const dayScore = {d1:10,d2:35,d3:25,d4:20,d5:25,d6:25,d7:15,d8:5,d9:50,d10:70};
+        const weekScore = {w1:25,w2:25,w3:25,w4:25};
+        const monScore = {m1:200,m2:100};
+
+        //【多层学习时间】计时任务与学习时间链配置
+        const timedTask = {d2: 60 * 60 * 1000, d9: 120 * 60 * 1000, d10: 180 * 60 * 1000};
+        const learnChain = [
+            {id:"d2",  min:60,  score:35, note:"有效学习60分钟",  ico:"📖", ic:"blue"},
+            {id:"d9",  min:120, score:50, note:"有效学习120分钟", ico:"📚", ic:"purple"},
+            {id:"d10", min:180, score:70, note:"有效学习180分钟", ico:"🎓", ic:"green"}
+        ];
+        let timers = {};
+
+        let appData = JSON.parse(localStorage.getItem("engPassLotteryFixed")) || {
+            today:new Date().toDateString(),
+            daily:{},weekly:{},month:{},
+            monthAct:0,records:[],season:new Date().getMonth(),
+            notes:{},
+            taskStartTs:{},
+            taskRemain:{},    //计时任务剩余毫秒（支持暂停）
+            drawnLevels:[],   //哪些等级已经抽过奖
+            lotteryBonus:0.00 //抽奖累计奖金
+        };
+        //兼容旧版本存档：补齐暂停功能所需字段，避免读取旧数据时抛错
+        if(appData.taskRemain===undefined) appData.taskRemain={};
+        if(appData.taskStartTs===undefined) appData.taskStartTs={};
+
+        //页面切换（带入场动画）
+        function switchPage(id){
+            document.querySelectorAll(".container>div").forEach(p=>p.classList.add("hide"));
+            const el=document.getElementById(id);
+            el.classList.remove("hide");
+            el.classList.remove("anim");
+            void el.offsetWidth;
+            el.classList.add("anim");
+        }
+        document.querySelectorAll(".nav-item").forEach(nav=>{
+            nav.onclick=()=>{
+                document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+                nav.classList.add("active");
+                switchPage(nav.dataset.page);
+            }
+        })
+        //tab切换
+        document.querySelectorAll(".tab").forEach(tb=>{
+            tb.onclick=()=>{
+                document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+                tb.classList.add("active");
+                document.querySelectorAll(".panel").forEach(p=>p.classList.add("hide"));
+                document.getElementById("panel-"+tb.dataset.type).classList.remove("hide");
+            }
+        })
+
+        //【多层学习时间】动态生成学习时长任务链（前一层完成才解锁下一层）
+        function buildLearnChain(){
+            const box = document.getElementById("learnChainBox");
+            box.innerHTML="";
+            const hint=document.createElement("div");
+            hint.className="chain-hint";
+            hint.innerText="⏭ 学习时间链："+learnChain.map(x=>x.min+"分钟").join(" → ")+"，完成前一层自动弹出下一层";
+            box.appendChild(hint);
+            learnChain.forEach(item=>{
+                const row=document.createElement("div");
+                row.className="task-item";
+                row.id="task-"+item.id;
+                row.innerHTML =
+                    '<div class="task-left">'+
+                        '<span class="task-ico '+item.ic+'">'+item.ico+'</span>'+
+                        '<div class="task-name">'+item.note+'<span class="score">+'+item.score+'</span></div>'+
+                    '</div>'+
+                    '<div class="task-right">'+
+                        '<button class="btn" data-id="'+item.id+'">完成</button>'+
+                        '<span class="timer-text" id="timer-'+item.id+'"></span>'+
+                    '</div>'+
+                    '<input type="text" placeholder="学习备注（可选）" class="note-input" id="note-'+item.id+'">';
+                const btn=row.querySelector(".btn");
+                btn.onclick=()=>handleTaskClick(btn);
+                box.appendChild(row);
+            });
+        }
+
+        //【多层学习时间】根据前置任务完成情况显示/隐藏
+        function renderLearnChain(){
+            learnChain.forEach((item,idx)=>{
+                const row=document.getElementById("task-"+item.id);
+                if(idx===0){
+                    row.classList.remove("hide");
+                }else{
+                    const pred=learnChain[idx-1].id;
+                    if(appData.daily[pred]){
+                        row.classList.remove("hide");
+                    }else{
+                        row.classList.add("hide");
+                    }
+                }
+            });
+        }
+
+        //【修复版抽奖函数：每次只消耗1次机会】
+        function doLottery(){
+            let lv = Math.min(Math.floor(appData.monthAct/100)+1,55);
+            //找出第一个还没有抽过的等级
+            let targetLevel=null;
+            for(let L=1;L<=lv;L++){
+                if(!appData.drawnLevels.includes(L)){
+                    targetLevel=L;
+                    break;
+                }
+            }
+            if(targetLevel===null){
+                alert("暂无抽奖次数，升级后获得抽奖机会！");
+                return;
+            }
+            //随机金额
+            let prize = (Math.random()*(2.0 - 0.5)+0.5).toFixed(2);
+            appData.lotteryBonus += Number(prize);
+            //仅标记当前这1个等级已抽奖，不再一次性标记全部
+            appData.drawnLevels.push(targetLevel);
+            alert(`🎉恭喜！抽到 ${prize} 元`);
+            save();
+            render();
+        }
+
+        //刷新界面
+        function render(){
+            const todayStr = new Date().toDateString();
+            const curMonth = new Date().getMonth();
+            //新月重置
+            if(appData.season!==curMonth){
+                appData={
+                    today:todayStr,daily:{},weekly:{},month:{},
+                    monthAct:0,records:[],season:curMonth,notes:{},taskStartTs:{},taskRemain:{},
+                    drawnLevels:[],lotteryBonus:0.00
+                };
+            }
+            //新的一天重置每日任务
+            if(appData.today!==todayStr){
+                appData.daily={};
+                appData.today=todayStr;
+            }
+
+            let todaySum=0;
+            Object.keys(appData.daily).forEach(k=>todaySum+=dayScore[k]);
+            let lv = Math.floor(appData.monthAct/100)+1;
+            lv = Math.min(lv,55);
+            let sub = appData.monthAct%100;
+            let fixedReward = calcMoney(lv);
+            let totalMoney = fixedReward + appData.lotteryBonus;
+
+            //可抽奖次数
+            let canDraw=0;
+            for(let L=1;L<=lv;L++){
+                if(!appData.drawnLevels.includes(L)) canDraw++;
+            }
+
+            document.getElementById("curLv").innerText=lv;
+            document.getElementById("bar").style.width = sub+"%";
+            document.getElementById("actPoint").innerText = sub;
+            document.getElementById("todayAct").innerText=todaySum;
+            document.getElementById("monthAct").innerText=appData.monthAct;
+            document.getElementById("moneyShow").innerText=totalMoney.toFixed(2);
+            document.getElementById("balance").innerText=totalMoney.toFixed(2);
+            document.getElementById("lotteryCount").innerText=canDraw;
+            const lvHint=document.getElementById("levelHint");
+            if(lv>=55) lvHint.innerText="🏆 已满级";
+            else lvHint.innerText="距升级还差 "+(100-sub);
+
+            //抽奖按钮状态
+            let lotBtn=document.getElementById("lotteryBtn");
+            if(canDraw>0){
+                lotBtn.disabled=false;
+            }else{
+                lotBtn.disabled=true;
+            }
+
+            //任务按钮状态（计时任务支持 启动/暂停/继续/完成）
+            document.querySelectorAll("[data-id]").forEach(btn=>{
+                const tid=btn.dataset.id;
+                btn.classList.remove("btn-done","btn-do","btn-timer");
+                const done=(tid.startsWith("d")&&appData.daily[tid])
+                    ||(tid.startsWith("w")&&appData.weekly[tid])
+                    ||(tid.startsWith("m")&&appData.month[tid]);
+                if(done){
+                    btn.innerText="✓ 已完成";
+                    btn.classList.add("btn-done");
+                    btn.disabled=true;
+                    return;
+                }
+                if(timedTask[tid]){
+                    const remain0 = appData.taskRemain[tid]!==undefined ? appData.taskRemain[tid] : timedTask[tid];
+                    if(appData.taskStartTs[tid]){
+                        const left = remain0 - (Date.now()-appData.taskStartTs[tid]);
+                        if(left>0){
+                            btn.innerText="⏸ 暂停";
+                            btn.classList.add("btn-timer");
+                            btn.disabled=false;
+                        }else{
+                            btn.innerText="✓ 完成";
+                            btn.classList.add("btn-do");
+                            btn.disabled=false;
+                        }
+                        return;
+                    }
+                    if(remain0>0 && remain0<timedTask[tid]){
+                        btn.innerText="▶ 继续";
+                        btn.classList.add("btn-timer");
+                        btn.disabled=false;
+                        return;
+                    }
+                    btn.innerText="完成";
+                    btn.classList.add("btn-do");
+                    btn.disabled=false;
+                    return;
+                }
+                btn.innerText="完成";
+                btn.classList.add("btn-do");
+                btn.disabled=false;
+            })
+            renderCalendar();
+            renderChart();
+            renderLearnChain();
+            save();
+        }
+
+        //等级固定奖金
+        function calcMoney(level){
+            let sum=0,lv=Math.min(level,55);
+            for(let i=20;i<=lv;i++){
+                if(i>=20&&i<=35) sum+=6;
+                else if(i>=36&&i<=48) sum+=10;
+                else if(i>=49&&i<=55) sum+=16;
+            }
+            return sum;
+        }
+
+        function save(){
+            localStorage.setItem("engPassLotteryFixed",JSON.stringify(appData));
+        }
+
+        //任务点击（统一处理，含多层学习时间解锁逻辑）
+        function handleTaskClick(btn){
+            const tid=btn.dataset.id;
+            //多层学习时间：未解锁前置任务不能完成
+            const cidx=learnChain.findIndex(x=>x.id===tid);
+            if(cidx>0 && !appData.daily[learnChain[cidx-1].id]){
+                alert("请先完成前置学习任务再打卡！");
+                return;
+            }
+            //计时任务：首次启动 / 暂停 / 继续 / 计时满后完成
+            if(timedTask[tid]){
+                const remain0 = appData.taskRemain[tid]!==undefined ? appData.taskRemain[tid] : timedTask[tid];
+                if(!appData.taskStartTs[tid]){
+                    if(remain0>0 && remain0<timedTask[tid]){
+                        //暂停中 → 继续
+                        appData.taskStartTs[tid]=Date.now();
+                        alert("继续计时中，加油！");
+                        render();
+                        startCountdown(tid);
+                        return;
+                    }
+                    //首次启动
+                    appData.taskStartTs[tid]=Date.now();
+                    appData.taskRemain[tid]=timedTask[tid];
+                    alert("计时已启动！学习完成后再来打卡");
+                    render();
+                    startCountdown(tid);
+                    return;
+                }else{
+                    const left = remain0 - (Date.now()-appData.taskStartTs[tid]);
+                    if(left>0){
+                        //计时中 → 暂停
+                        appData.taskRemain[tid]=left;
+                        delete appData.taskStartTs[tid];
+                        clearInterval(timers[tid]);
+                        const t=document.getElementById("timer-"+tid);
+                        if(t) t.innerText="⏸ 已暂停";
+                        alert("已暂停计时！点击「继续」恢复");
+                        render();
+                        return;
+                    }
+                    //计时已满 → 走完成流程
+                    appData.taskRemain[tid]=0;
+                }
+            }
+            const noteDom = document.getElementById("note-"+tid);
+            if(noteDom) appData.notes[tid] = noteDom.value;
+
+            let add=0;
+            if(tid.startsWith("d")){ appData.daily[tid]=true; add=dayScore[tid];}
+            if(tid.startsWith("w")){ appData.weekly[tid]=true; add=weekScore[tid];}
+            if(tid.startsWith("m")){ appData.month[tid]=true; add=monScore[tid];}
+            appData.monthAct += add;
+            //活跃度封顶锁最高5500
+            if(appData.monthAct > 5500) appData.monthAct = 5500;
+
+            appData.records.push({date:new Date().toDateString(),pt:add,task:tid});
+            //清理计时状态
+            if(timedTask[tid]){
+                delete appData.taskStartTs[tid];
+                delete appData.taskRemain[tid];
+                clearInterval(timers[tid]);
+                const t=document.getElementById("timer-"+tid);
+                if(t) t.innerText="";
+            }
+            let msg=`任务完成！活跃度 +${add}`;
+            //完成当前层后，自动弹出下一层学习任务
+            if(cidx>=0 && cidx<learnChain.length-1){
+                msg+=`\n\n🎉 已解锁【${learnChain[cidx+1].note}】任务！`;
+            }
+            alert(msg);
+            render();
+        }
+
+        document.querySelectorAll("[data-id]").forEach(btn=>{
+            btn.onclick=()=>handleTaskClick(btn);
+        })
+
+        function startCountdown(taskId){
+            if(timers[taskId]) clearInterval(timers[taskId]);
+            timers[taskId] = setInterval(()=>{
+                if(!appData.taskStartTs[taskId]){
+                    clearInterval(timers[taskId]);return;
+                }
+                const remain0 = appData.taskRemain[taskId]!==undefined ? appData.taskRemain[taskId] : timedTask[taskId];
+                let left = remain0 - (Date.now() - appData.taskStartTs[taskId]);
+                if(left<=0){
+                    document.getElementById("timer-"+taskId).innerText = "✅计时结束";
+                    clearInterval(timers[taskId]);
+                    render();
+                    return;
+                }
+                let min = Math.floor(left/60000);
+                let sec = Math.floor((left%60000)/1000);
+                document.getElementById("timer-"+taskId).innerText = `${min}:${String(sec).padStart(2,'0')}`;
+            },1000);
+        }
+
+        //日历（含星期表头、今日高亮、打卡标记）
+        function renderCalendar(){
+            const box=document.getElementById("calBox");
+            box.innerHTML="";
+            const now=new Date();
+            const m = now.getMonth(),y=now.getFullYear();
+            const first=new Date(y,m,1);
+            const days = new Date(y,m+1,0).getDate();
+            document.getElementById("calMonth").innerText = (m+1)+"月 · "+(new Date(y,m,1).toLocaleDateString("zh-CN",{year:"numeric"}));
+            //首日前的空位
+            const firstDow=first.getDay();
+            for(let k=0;k<firstDow;k++){
+                const b=document.createElement("div");
+                b.className="day-cell blank";
+                box.appendChild(b);
+            }
+            const todayStr=now.toDateString();
+            for(let i=1;i<=days;i++){
+                const d=new Date(y,m,i);
+                const dt=d.toDateString();
+                const cell=document.createElement("div");
+                cell.className="day-cell";
+                cell.innerText=i;
+                const has = appData.records.some(r=>r.date===dt);
+                if(has){
+                    cell.classList.add("finish");
+                    cell.title="已打卡";
+                }
+                if(dt===todayStr) cell.classList.add("today");
+                box.appendChild(cell);
+            }
+        }
+
+        //图表（渐变柱状 + 今日高亮 + 日期标签）
+        function renderChart(){
+            const dom=document.getElementById("chartDom");
+            dom.innerHTML="";
+            for(let i=13;i>=0;i--){
+                const dObj=new Date(Date.now()-i*86400000);
+                const dt=dObj.toDateString();
+                const item = appData.records.find(x=>x.date===dt);
+                const val = item?item.pt:0;
+                const h = Math.min(val/8,100);
+                const wrap=document.createElement("div");
+                wrap.className="chart-col";
+                const bar=document.createElement("div");
+                bar.className="col"+(i===0?" today-bar":"");
+                bar.style.height=h+"%";
+                bar.title=val+" 活跃度";
+                const lab=document.createElement("span");
+                lab.className="chart-lab";
+                lab.innerText=(i%2===1)?dObj.getDate():"";
+                wrap.appendChild(bar);
+                wrap.appendChild(lab);
+                dom.appendChild(wrap);
+            }
+        }
+
+        function resetSeason(){
+            if(confirm("确定清空本月全部打卡进度？无法恢复！")){
+                appData={
+                    today:new Date().toDateString(),
+                    daily:{},weekly:{},month:{},
+                    monthAct:0,records:[],season:new Date().getMonth(),notes:{},taskStartTs:{},taskRemain:{},
+                    drawnLevels:[],lotteryBonus:0.00
+                };
+                render();
+            }
+        }
+
+        buildLearnChain();
+        render();
+    </script>
+</body>
+</html>
